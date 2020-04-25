@@ -14,6 +14,10 @@ const INITIAL_STATE = {
   isClicked: false,
 };
 
+const callFnsInSequence = (...fns) => (...args) => {
+  fns.forEach((fn) => fn && fn(...args));
+};
+
 /**
  * Custom Hook for animation
  */
@@ -139,23 +143,21 @@ const useClapState = (initialState = INITIAL_STATE) => {
     }));
   }, [count, countTotal]);
 
-  // props collicetion for 'click
-
-  const togglerProps = {
-    onClick: updateClapState,
+  const getTogglerProps = ({ onClick, ...otherProps }) => ({
+    onClick: callFnsInSequence(updateClapState, onClick),
     'aria-pressed': clapState.isClicked,
-  };
+    ...otherProps,
+  });
 
-  // props collection for 'count
-
-  const counterProps = {
+  const getCounterProps = ({ ...otherProps }) => ({
     count,
     'aria-valuemax': MAXIMUM_USER_CLAP,
     'aria-valuemin': 0,
     'aria-valnow': count,
-  };
+    ...otherProps,
+  });
 
-  return { clapState, updateClapState, togglerProps, counterProps };
+  return { clapState, updateClapState, getTogglerProps, getCounterProps };
 };
 
 /**
@@ -224,8 +226,8 @@ const Usage = () => {
   const {
     clapState,
     updateClapState,
-    togglerProps,
-    counterProps,
+    getTogglerProps,
+    getCounterProps,
   } = useClapState();
   const { count, countTotal, isClicked } = clapState;
 
@@ -242,9 +244,19 @@ const Usage = () => {
   }, [count]);
 
   return (
-    <ClapContainer setRef={setRef} data-refkey='clapRef' {...togglerProps}>
+    <ClapContainer
+      setRef={setRef}
+      data-refkey='clapRef'
+      {...getTogglerProps({
+        onClick: () => console.log('CLICKED!!'),
+      })}
+    >
       <ClapIcon isClicked={isClicked} />
-      <ClapCount setRef={setRef} data-refkey='clapCountRef' {...counterProps} />
+      <ClapCount
+        setRef={setRef}
+        data-refkey='clapCountRef'
+        {...getCounterProps()}
+      />
       <CountTotal
         countTotal={countTotal}
         setRef={setRef}
